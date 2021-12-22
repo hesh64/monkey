@@ -16,13 +16,15 @@ type (
 	}
 )
 
+// nextToken moves the value inside of peekToken into curToken
+// then reads the next token into peekToken
 func (p *Parser) nextToken() {
-	//if p.peekToken.Type != token.EOF {
 	p.curToken = p.peekToken
 	p.peekToken = p.l.NextToken()
-	//}
 }
 
+// parseStatement parses the two types of statements the monkey language supports.
+// Let and Return statements
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
@@ -34,6 +36,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	}
 }
 
+// ParseProgram Parses through the entire lexer
 func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{
 		Statements: make([]ast.Statement, 0),
@@ -51,6 +54,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
+// parseIdentifier parses the curToken into an identifier
 func (p *Parser) parseIdentifier() *ast.Identifier {
 	return &ast.Identifier{
 		Token: p.curToken,
@@ -73,6 +77,7 @@ func (p *Parser) parseIdentifier() *ast.Identifier {
 //	return nil
 //}
 
+// parseIntegerLiteral does what it says it does
 func (p *Parser) parseIntegerLiteral() ast.Expression {
 	return &ast.Identifier{
 		Token: p.curToken,
@@ -91,15 +96,20 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 //	return opExp
 //}
 
+// leave for now.
 func (p *Parser) parseGroupedExpression() ast.Expression { return nil }
 
+// curTokenIs returns true if the curToken type is of that token.TokenType passed
 func (p *Parser) curTokenIs(t token.TokenType) bool {
 	return p.curToken.Type == t
 }
+
+// peekTokenIs return true if the peekToken type is of that token.TokenType passed
 func (p *Parser) peekTokenIs(t token.TokenType) bool {
 	return p.peekToken.Type == t
 }
 
+// expectPeek return an error if the peekToken type is of that token.TokenType passed
 func (p *Parser) expectPeek(t token.TokenType) bool {
 	if p.peekTokenIs(t) {
 		p.nextToken()
@@ -110,6 +120,7 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 	return false
 }
 
+// parseLetStatement parses a let statement
 func (p *Parser) parseLetStatement() ast.Statement {
 	stmt := &ast.LetStatement{
 		Token: p.curToken,
@@ -133,6 +144,7 @@ func (p *Parser) parseLetStatement() ast.Statement {
 	return stmt
 }
 
+// parseReturnStatement parses a return statement
 func (p *Parser) parseReturnStatement() ast.Statement {
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 
@@ -144,17 +156,20 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 
 	return stmt
 }
+
 func (p *Parser) parseIfStatement() ast.Statement { return nil }
 
-func (p *Parser) Errors() []string {
-	return p.errors
-}
-
+// peekError appends an error ot the parsers error object.
 func (p *Parser) peekError(t token.TokenType) {
 	if p.peekToken.Type != t {
 		p.errors = append(p.errors, fmt.Sprintf("expected next token to be %s, got %s instead",
 			t, p.peekToken.Type))
 	}
+}
+
+// Errors a helper for extracting all the errors accumulated by the parser during parsing.
+func (p *Parser) Errors() []string {
+	return p.errors
 }
 
 func New(l *lexer.Lexer) *Parser {
