@@ -46,16 +46,12 @@ func (p *Program) String() string {
 }
 
 type (
-	// Identifier holds the value of a user or language defined identifier name
-	Identifier struct {
-		Token *token.Token
-		Value string
-	}
+	// Statement implementers
 
 	// LetStatement is a let declaration ast node
 	LetStatement struct {
 		Token *token.Token // the token to which this statement points to
-		Name  *Identifier  // name of the variable
+		Name  Expression   // name of the variable
 		Value Expression
 	}
 
@@ -64,16 +60,42 @@ type (
 		Token       *token.Token // the token to which this statement points to
 		ReturnValue Expression
 	}
-
+	// ExpressionStatement is any type of expression
+	// ex:
+	// foobar;
+	// foobar + 1;
+	// 1 + 1;
+	// 1 + add(1, foobar);
 	ExpressionStatement struct {
-		Token      token.Token // the first token of the expression
+		Token      *token.Token // the first token of the expression
 		Expression Expression
 	}
 
-	OperatorExpression struct {
+	// Expression implementer
+
+	// Identifier holds the value of a user or language defined identifier name
+	Identifier struct {
 		Token *token.Token
-		Left  Expression
-		Right Expression
+		Value string
+	}
+
+	IntegerLiteral struct {
+		Token *token.Token
+		Value int64
+	}
+
+	// PrefixExpression like "-1", "!found"
+	PrefixExpression struct {
+		Token    *token.Token
+		Operator string
+		Right    Expression // this will point to the 1 or found
+	}
+
+	InfixExpression struct {
+		Token    *token.Token
+		Operator string
+		Left     Expression
+		Right    Expression
 	}
 )
 
@@ -121,5 +143,30 @@ func (i *Identifier) expressionNode()      {}
 func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
 func (i *Identifier) String() string       { return i.Value }
 
-func (i *OperatorExpression) expressionNode()      {}
-func (i *OperatorExpression) TokenLiteral() string { return i.Token.Literal }
+func (i *IntegerLiteral) expressionNode()      {}
+func (i *IntegerLiteral) TokenLiteral() string { return i.Token.Literal }
+func (i *IntegerLiteral) String() string       { return i.Token.Literal }
+
+func (i *PrefixExpression) expressionNode()      {}
+func (i *PrefixExpression) TokenLiteral() string { return i.Token.Literal }
+func (i *PrefixExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(i.Operator)
+	out.WriteString(i.Right.String())
+	out.WriteString(")")
+	return out.String()
+}
+func (i *InfixExpression) expressionNode()      {}
+func (i *InfixExpression) TokenLiteral() string { return i.Token.Literal }
+func (i *InfixExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(i.Left.String())
+	out.WriteString(" " + i.Operator + " ")
+	out.WriteString(i.Right.String())
+	out.WriteString(")")
+	return out.String()
+}
