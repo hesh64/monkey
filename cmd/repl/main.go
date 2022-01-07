@@ -4,8 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"monkey/internal/evaluator"
 	"monkey/internal/lexer"
-	"monkey/internal/token"
+	"monkey/internal/parser"
 	"os"
 	user "os/user"
 )
@@ -24,17 +25,33 @@ func Start(in io.Reader, out io.Writer) {
 
 		line := scanner.Text()
 		l := lexer.New(line)
+		p := parser.New(l)
 
-		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
-			fmt.Fprintf(out, "%+v\n", tok)
+		program := p.ParseProgram()
+		if len(p.Errors()) != 0 {
+			printParserErrors(out, p.Errors())
+			continue
 		}
+
+		evaluated := evaluator.Eval(program)
+		if evaluated != nil {
+			io.WriteString(out, program.String())
+			io.WriteString(out, "\n")
+		}
+	}
+}
+
+func printParserErrors(out io.Writer, errs []string) {
+	for _, msg := range errs {
+		io.WriteString(out, "\t"+msg+"\n")
 	}
 }
 
 func main() {
 	user, err := user.Current()
 	if err != nil {
-		panic(err)
+		fmt.Printf(err.Error())
+		return
 	}
 
 	fmt.Printf("Hello %s! this is the Monkey programming language!\n", user.Username)

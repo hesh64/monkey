@@ -3,6 +3,7 @@ package ast
 import (
 	"bytes"
 	"monkey/internal/token"
+	"strings"
 )
 
 type (
@@ -79,9 +80,31 @@ type (
 		Value string
 	}
 
+	BlockStatement struct {
+		Token      *token.Token
+		Statements []Statement
+	}
+
+	Boolean struct {
+		Token *token.Token
+		Value bool
+	}
+
 	IntegerLiteral struct {
 		Token *token.Token
 		Value int64
+	}
+
+	FunctionLiteral struct {
+		Token      *token.Token
+		Parameters []*Identifier
+		Body       *BlockStatement
+	}
+
+	CallExpression struct {
+		Token     *token.Token
+		Function  Expression
+		Arguments []Expression
 	}
 
 	// PrefixExpression like "-1", "!found"
@@ -96,6 +119,13 @@ type (
 		Operator string
 		Left     Expression
 		Right    Expression
+	}
+
+	IfExpression struct {
+		Token       *token.Token
+		Condition   Expression
+		Consequence *BlockStatement
+		Alternative *BlockStatement
 	}
 )
 
@@ -168,5 +198,73 @@ func (i *InfixExpression) String() string {
 	out.WriteString(" " + i.Operator + " ")
 	out.WriteString(i.Right.String())
 	out.WriteString(")")
+	return out.String()
+}
+
+func (i *Boolean) expressionNode()      {}
+func (i *Boolean) TokenLiteral() string { return i.Token.Literal }
+func (i *Boolean) String() string       { return i.Token.Literal }
+
+func (i *IfExpression) expressionNode()      {}
+func (i *IfExpression) TokenLiteral() string { return i.Token.Literal }
+func (i *IfExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("if")
+	out.WriteString(i.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(i.Consequence.String())
+	if i.Alternative != nil {
+		out.WriteString("else ")
+		out.WriteString(i.Alternative.String())
+	}
+
+	return out.String()
+}
+func (i *FunctionLiteral) expressionNode()      {}
+func (i *FunctionLiteral) TokenLiteral() string { return i.Token.Literal }
+func (i *FunctionLiteral) String() string {
+	var out bytes.Buffer
+
+	var params []string
+	for _, p := range i.Parameters {
+		params = append(params, p.String())
+	}
+
+	out.WriteString(i.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(")")
+	out.WriteString(i.Body.String())
+
+	return out.String()
+}
+
+func (i *BlockStatement) statementNode()       {}
+func (i *BlockStatement) TokenLiteral() string { return i.Token.Literal }
+func (i *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for _, s := range i.Statements {
+		out.WriteString(s.String())
+	}
+
+	return out.String()
+}
+
+func (i *CallExpression) expressionNode()      {}
+func (i *CallExpression) TokenLiteral() string { return i.Token.Literal }
+func (i *CallExpression) String() string {
+	var out bytes.Buffer
+	var args []string
+
+	out.WriteString(i.Function.String())
+	for _, arg := range i.Arguments {
+		args = append(args, arg.String())
+	}
+	out.WriteString("(")
+	out.WriteString(strings.Join(args, ", "))
+	out.WriteString(")")
+
 	return out.String()
 }
