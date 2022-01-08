@@ -38,4 +38,4 @@ func evalStatements(stmts []ast.Statement) object.Object {
 	return result
 }
 
-func evalPrefixExpression(node ast.PrefixExpression, node2 ast.Node)
+//func evalPrefixExpression(node ast.PrefixExpression, node2 ast.Node)
