@@ -18,12 +18,24 @@ func Eval(node ast.Node) object.Object {
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression)
 	case *ast.IntegerLiteral:
-		return &object.Integer{Value: node.Value}
+		o := &object.Integer{Value: node.Value}
+		return o
 	case *ast.Boolean:
 		if node.Value {
 			return TRUE
 		}
 		return FALSE
+	case *ast.PrefixExpression:
+		right := Eval(node.Right)
+		return evalPrefixExpression(node.Operator, right)
+	case *ast.InfixExpression:
+		left := Eval(node.Left)
+		right := Eval(node.Right)
+		return evalInfixExpression(node.Operator, left, right)
+	case *ast.BlockStatement:
+		return evalStatements(node.Statements)
+	case *ast.IfExpression:
+		return evalIfExpression(node)
 	}
 
 	return nil
@@ -38,4 +50,152 @@ func evalStatements(stmts []ast.Statement) object.Object {
 	return result
 }
 
-//func evalPrefixExpression(node ast.PrefixExpression, node2 ast.Node)
+func evalPrefixExpression(operator string, right object.Object) object.Object {
+	switch operator {
+	case "!":
+		return evalBangOperatorExpression(right)
+	case "-":
+		return evalMinusPrefixOperatorExpression(right)
+	default:
+		return NULL
+	}
+}
+
+func evalBangOperatorExpression(right object.Object) object.Object {
+	switch right {
+	case TRUE:
+		return FALSE
+	case FALSE:
+		return TRUE
+	case NULL:
+		return TRUE
+	default: // we handled the only two possible falsy values (False & Null)
+		return FALSE
+	}
+}
+
+func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
+	if right.Type() != object.INTEGER_OBJ {
+		return NULL
+	}
+
+	// Why allocate a new object if you can just update?
+	right.(*object.Integer).Value = right.(*object.Integer).Value * -1
+	return right
+}
+
+func evalIntegerInfixExpression(operator string, left, right object.Object) object.Object {
+	switch operator {
+	case "+":
+		return &object.Integer{Value: left.(*object.Integer).Value + right.(*object.Integer).Value}
+	case "-":
+		return &object.Integer{Value: left.(*object.Integer).Value - right.(*object.Integer).Value}
+	case "*":
+		return &object.Integer{Value: left.(*object.Integer).Value * right.(*object.Integer).Value}
+	case "/":
+		// todo handle error?
+		return &object.Integer{Value: left.(*object.Integer).Value / right.(*object.Integer).Value}
+	case "==":
+		return nativeBoolToBooleanObject(left.(*object.Integer).Value == right.(*object.Integer).Value)
+	case "!=":
+		return nativeBoolToBooleanObject(left.(*object.Integer).Value != right.(*object.Integer).Value)
+	case "<":
+		return nativeBoolToBooleanObject(left.(*object.Integer).Value < right.(*object.Integer).Value)
+	case ">":
+		return nativeBoolToBooleanObject(left.(*object.Integer).Value > right.(*object.Integer).Value)
+	default:
+		return NULL
+	}
+}
+
+func nativeBoolToBooleanObject(b bool) object.Object {
+	if b {
+		return TRUE
+	}
+
+	return FALSE
+}
+
+func evalBooleanInfixExpression(operator string, left, right object.Object) object.Object {
+	switch operator {
+	case "==":
+		return nativeBoolToBooleanObject(left.(*object.Boolean).Value == right.(*object.Boolean).Value)
+	case "!=":
+		return nativeBoolToBooleanObject(left.(*object.Boolean).Value != right.(*object.Boolean).Value)
+	case "<":
+		leftVal := 0
+		if left.(*object.Boolean).Value {
+			leftVal = 1
+		}
+		rightVal := 0
+		if right.(*object.Boolean).Value {
+			rightVal = 1
+		}
+		return nativeBoolToBooleanObject(leftVal < rightVal)
+	case ">":
+		leftVal := 0
+		if left.(*object.Boolean).Value {
+			leftVal = 1
+		}
+		rightVal := 0
+		if right.(*object.Boolean).Value {
+			rightVal = 1
+		}
+		return nativeBoolToBooleanObject(leftVal > rightVal)
+
+	default:
+		return NULL
+	}
+}
+
+func evalBoolToInt(boolean object.Object) object.Object {
+	if boolean.(*object.Boolean).Value {
+		return &object.Integer{Value: 1}
+	}
+
+	return &object.Integer{Value: 0}
+}
+
+func evalInfixExpression(operator string, left, right object.Object) object.Object {
+	if left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ {
+		return evalIntegerInfixExpression(operator, left, right)
+	}
+
+	if left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ {
+		return evalBooleanInfixExpression(operator, left, right)
+	}
+
+	if left.Type() == object.BOOLEAN_OBJ && right.Type() == object.INTEGER_OBJ {
+		return evalIntegerInfixExpression(operator, evalBoolToInt(left), right)
+	} else if left.Type() == object.INTEGER_OBJ && right.Type() == object.BOOLEAN_OBJ {
+		return evalIntegerInfixExpression(operator, left, evalBoolToInt(right))
+	}
+
+	return NULL
+}
+
+func evalIfExpression(ie *ast.IfExpression) object.Object {
+	condition := Eval(ie.Condition)
+
+	if isTruthy(condition) {
+		e := Eval(ie.Consequence)
+		return e
+	} else if ie.Alternative != nil {
+		return Eval(ie.Alternative)
+	} else {
+		return NULL
+	}
+}
+
+func isTruthy(obj object.Object) bool {
+	switch obj {
+	case NULL:
+		return false
+	case TRUE:
+		return true
+	case FALSE:
+		return false
+	default:
+		return true
+	}
+}
