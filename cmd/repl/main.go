@@ -6,6 +6,7 @@ import (
 	"io"
 	"monkey/internal/evaluator"
 	"monkey/internal/lexer"
+	"monkey/internal/object"
 	"monkey/internal/parser"
 	"os"
 	user "os/user"
@@ -15,6 +16,7 @@ const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	environment := object.NewEnv()
 
 	for {
 		fmt.Fprintf(out, PROMPT)
@@ -33,7 +35,7 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluated := evaluator.Eval(program)
+		evaluated := evaluator.Eval(program, environment)
 		if evaluated != nil {
 			//io.WriteString(out, program.String())
 			io.WriteString(out, evaluated.Inspect())
@@ -59,3 +61,10 @@ func main() {
 	fmt.Printf("Feel free to type in commands\n")
 	Start(os.Stdin, os.Stdout)
 }
+
+//str := `
+//let add = fn(x, y) { x + y };
+//let addN = fn(x) { fn(y) { x + y } }
+//let addSix = addN(6)
+//let twelve = addSix(6)
+//`

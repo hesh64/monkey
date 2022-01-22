@@ -26,8 +26,9 @@ const (
 	EOF     = "EOF"
 
 	// Identifiers
-	IDENT = "IDENT" // token type for all the user defined identifiers
-	INT   = "INT"   // integer data type
+	IDENT  = "IDENT" // token type for all the user defined identifiers
+	INT    = "INT"   // integer data type
+	STRING = "STRING"
 
 	// Operators
 	ASSIGN   = "="
@@ -47,10 +48,12 @@ const (
 	COMMA     = ","
 	SEMICOLON = ";"
 
-	LPAREN = "("
-	RPAREN = ")"
-	LBRACE = "{"
-	RBRACE = "}"
+	LPAREN   = "("
+	RPAREN   = ")"
+	LBRACE   = "{"
+	RBRACE   = "}"
+	LBRACKET = "["
+	RBRACKET = "]"
 
 	// Keywords
 	FUNCTION = "FUNCTION"

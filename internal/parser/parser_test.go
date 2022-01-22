@@ -352,19 +352,25 @@ func TestParsingPrefixExpressions(t *testing.T) {
 
 func TestParsingInfixExpression(t *testing.T) {
 	infixTests := []struct {
-		input      string
-		leftValue  int64
-		operator   string
-		rightValue int64
+		input          string
+		leftValueType  int
+		leftValue      interface{}
+		operator       string
+		rightValueType int
+		rightValue     interface{}
 	}{
-		{"5 + 5;", 5, "+", 5},
-		{"5 - 5;", 5, "-", 5},
-		{"5 * 5;", 5, "*", 5},
-		{"5 / 5;", 5, "/", 5},
-		{"5 > 5;", 5, ">", 5},
-		{"5 < 5;", 5, "<", 5},
-		{"5 == 5;", 5, "==", 5},
-		{"5 != 5;", 5, "!=", 5},
+		{"5 + 5;", 0, int64(5), "+", 0, int64(5)},
+		{"5 - 5;", 0, int64(5), "-", 0, int64(5)},
+		{"5 * 5;", 0, int64(5), "*", 0, int64(5)},
+		{"5 / 5;", 0, int64(5), "/", 0, int64(5)},
+		{"5 > 5;", 0, int64(5), ">", 0, int64(5)},
+		{"5 < 5;", 0, int64(5), "<", 0, int64(5)},
+		{"5 == 5;", 0, int64(5), "==", 0, int64(5)},
+		{"5 != 5;", 0, int64(5), "!=", 0, int64(5)},
+		{`"5" != "5";`, 1, "5", "!=", 1, "5"},
+		{`"5" == "5";`, 1, "5", "!=", 1, "5"},
+		{`"5" * 5;`, 1, "5", "!=", 0, int64(5)},
+		{`"5" + "5";`, 1, "5", "!=", 0, "5"},
 	}
 
 	for _, tt := range infixTests {
@@ -388,8 +394,10 @@ func TestParsingInfixExpression(t *testing.T) {
 			t.Fatalf("stmt is not *ast.InfixExpression. get=%T", stmt.Expression)
 		}
 
-		if !testInfixExpression(t, exp, tt.leftValue, tt.operator, tt.rightValue) {
-			return
+		if tt.leftValueType == 0 {
+			if !testInfixExpression(t, exp, tt.leftValue.(int64), tt.operator, tt.rightValue.(int64)) {
+				return
+			}
 		}
 	}
 }
@@ -735,5 +743,24 @@ func TestReturnStatements(t *testing.T) {
 		if !testLiteralExpression(t, val, tt.expectedValue) {
 			return
 		}
+	}
+}
+
+func TestStringLiteral(t *testing.T) {
+	input := `"hello world!"`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	stmt := program.Statements[0].(*ast.ExpressionStatement)
+	literal, ok := stmt.Expression.(*ast.StringLiteral)
+	if !ok {
+		t.Fatalf("expected program.Statements[0] type *ast.StringLiteral. got=%T", stmt.Expression)
+	}
+
+	if literal.Value != "hello world!" {
+		t.Errorf("literal.Value not %q. got=%q", "hello world", literal.Value)
 	}
 }
