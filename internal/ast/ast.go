@@ -112,6 +112,11 @@ type (
 		Arguments []Expression
 	}
 
+	ArrayLiteral struct {
+		Token    *token.Token
+		Elements []Expression
+	}
+
 	// PrefixExpression like "-1", "!found"
 	PrefixExpression struct {
 		Token    *token.Token
@@ -275,5 +280,19 @@ func (i *CallExpression) String() string {
 	out.WriteString(strings.Join(args, ", "))
 	out.WriteString(")")
 
+	return out.String()
+}
+
+func (i *ArrayLiteral) expressionNode()      {}
+func (i *ArrayLiteral) TokenLiteral() string { return i.Token.Literal }
+func (i *ArrayLiteral) String() string {
+	var out bytes.Buffer
+	out.WriteString("[")
+
+	for _, elt := range i.Elements {
+		out.WriteString(elt.String())
+	}
+
+	out.WriteString("]")
 	return out.String()
 }

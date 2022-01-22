@@ -764,3 +764,34 @@ func TestStringLiteral(t *testing.T) {
 		t.Errorf("literal.Value not %q. got=%q", "hello world", literal.Value)
 	}
 }
+
+func TestParsingArrayLiteral(t *testing.T) {
+	input := `["1", 2, fn(x) {x * x}]`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("expected program.Statements length 1. got=%d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("expected statement to be of type *ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+
+	arr, ok := stmt.Expression.(*ast.ArrayLiteral)
+	if !ok {
+		t.Errorf("expected expression to be of type *ast.ArrayLiteral. got=%T", stmt.Expression)
+	}
+
+	if len(arr.Elements) != 3 {
+		t.Errorf("expected array literal to have 3 arguments. got=%d", len(arr.Elements))
+	}
+
+	if arr.Elements[0].String() != "1" {
+		t.Errorf("expected arr[0] to equal `1`. got=%s", arr.Elements[0].String())
+	}
+	testIntegerLiteral(t, arr.Elements[1], 2)
+}

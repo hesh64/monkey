@@ -37,7 +37,6 @@ func Start(in io.Reader, out io.Writer) {
 
 		evaluated := evaluator.Eval(program, environment)
 		if evaluated != nil {
-			//io.WriteString(out, program.String())
 			io.WriteString(out, evaluated.Inspect())
 			io.WriteString(out, "\n")
 		}
@@ -61,10 +60,3 @@ func main() {
 	fmt.Printf("Feel free to type in commands\n")
 	Start(os.Stdin, os.Stdout)
 }
-
-//str := `
-//let add = fn(x, y) { x + y };
-//let addN = fn(x) { fn(y) { x + y } }
-//let addSix = addN(6)
-//let twelve = addSix(6)
-//`
