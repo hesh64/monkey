@@ -19,6 +19,7 @@ const (
 	PREFIX      // -x or !x
 	CALL        // myFunctions(X)
 	INDEX       // array index
+	COLON       // property access
 )
 
 type (
@@ -48,6 +49,7 @@ var (
 		token.ASTERISK: PRODUCT,
 		token.LPAREN:   CALL,
 		token.LBRACKET: INDEX,
+		token.COLON:    COLON,
 	}
 )
 
@@ -458,6 +460,16 @@ func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
 func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
 	index := &ast.IndexExpression{Token: p.curToken, Left: left}
 
+	if p.curTokenIs(token.PERIOD) {
+		if !p.peekTokenIs(token.IDENT) {
+			return nil
+		}
+
+		p.nextToken()
+		index.Index = p.parseIdentifier()
+		return index
+	}
+
 	p.nextToken()
 	index.Index = p.parseExpression(LOWEST)
 
@@ -466,6 +478,39 @@ func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
 	}
 
 	return index
+}
+
+func (p *Parser) parseHashExpression() ast.Expression {
+	hash := &ast.HashLiteral{
+		Token: p.curToken,
+		Hash:  map[ast.Expression]ast.Expression{},
+	}
+
+	for !p.peekTokenIs(token.RBRACE) {
+		p.nextToken()
+
+		key := p.parseExpression(LOWEST)
+		if !p.expectPeek(token.COLON) {
+			return nil
+		}
+		// move over the colon
+		p.nextToken()
+		value := p.parseExpression(LOWEST)
+		hash.Hash[key] = value
+
+		if !p.peekTokenIs(token.RBRACE) && !p.expectPeek(token.COMMA) {
+			// if we are not about the end with a } or if there isn't an upcoming element
+			// then there is an error
+			return nil
+		}
+	}
+
+	if !p.expectPeek(token.RBRACE) {
+		// this is where we error out if we didn't end of a brace
+		return nil
+	}
+
+	return hash
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -487,6 +532,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
+	p.registerPrefix(token.LBRACE, p.parseHashExpression)
 
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
@@ -498,6 +544,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
+	p.registerInfix(token.PERIOD, p.parseIndexExpression)
 
 	p.nextToken()
 	p.nextToken()

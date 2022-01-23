@@ -1,6 +1,9 @@
 package evaluator
 
-import "monkey/internal/object"
+import (
+	"fmt"
+	"monkey/internal/object"
+)
 
 var builtins = map[string]*object.Builtin{
 	"len": {
@@ -17,6 +20,23 @@ var builtins = map[string]*object.Builtin{
 			default:
 				return newError("argument to `len` is not supported. got %s", args[0].Type())
 			}
+		},
+	},
+	"printf": {
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) == 0 {
+				return newError("wrong number of arguments. got=%d", len(args))
+			}
+
+			argsInterface := make([]interface{}, 0, len(args))
+			for i, arg := range args {
+				if i > 0 {
+					argsInterface = append(argsInterface, arg.Inspect())
+				}
+			}
+
+			fmt.Printf(args[0].Inspect(), argsInterface...)
+			return NULL
 		},
 	},
 }

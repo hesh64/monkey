@@ -62,6 +62,7 @@ if (5 < 10) {
 "foo bar"
 [1, 2];
 [1, 2][1];
+{"apple": "bee"}.apple
 `,
 			tests: []TestCase{
 				{token.LET, "let"},
@@ -154,6 +155,13 @@ if (5 < 10) {
 				{token.INT, "1"},
 				{token.RBRACKET, "]"},
 				{token.SEMICOLON, ";"},
+				{token.LBRACE, "{"},
+				{token.STRING, "apple"},
+				{token.COLON, ":"},
+				{token.STRING, "bee"},
+				{token.RBRACE, "}"},
+				{token.PERIOD, "."},
+				{token.IDENT, "apple"},
 				{token.EOF, ""},
 			},
 		},

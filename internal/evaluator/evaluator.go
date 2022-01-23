@@ -13,6 +13,10 @@ var (
 	NULL  = &object.Null{}
 )
 
+func invalidIndexType(index object.Object) *object.Error {
+	return newError("invalid index type. got=" + string(index.Type()))
+}
+
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
@@ -92,6 +96,31 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 
 		return &object.Array{Elements: elements}
+	case *ast.HashLiteral:
+		hash := &object.Hash{Pairs: map[object.HashKey]object.HashPair{}}
+		for key, value := range node.Hash {
+			keyEval := Eval(key, env)
+			if isError(keyEval) {
+				return keyEval
+			}
+
+			hashableKey, ok := keyEval.(object.Hashable)
+			if !ok {
+				return invalidIndexType(keyEval)
+			}
+
+			valueEval := Eval(value, env)
+			if isError(valueEval) {
+				return valueEval
+			}
+
+			hash.Pairs[hashableKey.HashKey()] = object.HashPair{
+				Key:   keyEval,
+				Value: valueEval,
+			}
+		}
+
+		return hash
 	case *ast.IndexExpression:
 		left := Eval(node.Left, env)
 		if isError(left) {
@@ -373,11 +402,27 @@ func evalArrayIndexExpression(left, index object.Object) object.Object {
 	return array.Elements[idx]
 }
 
+func evalHashIndexExpression(left, index object.Object) object.Object {
+	hash := left.(*object.Hash)
+	idx, ok := index.(object.Hashable)
+	if !ok {
+		return invalidIndexType(index)
+	}
+
+	if value, ok := hash.Pairs[idx.HashKey()]; ok {
+		return value.Value
+	}
+
+	return NULL
+}
+
 func evalIndexExpression(left, index object.Object) object.Object {
 	switch left.(type) {
 	case *object.Array:
 		// todo we differ from the book on how to evaluate the object indices
 		return evalArrayIndexExpression(left, index)
+	case *object.Hash:
+		return evalHashIndexExpression(left, index)
 	default:
 		return newError("index operator not supported: %s", left.Type())
 	}

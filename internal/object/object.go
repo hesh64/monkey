@@ -19,12 +19,18 @@ const (
 	FUNCTION_OBJ     = "FUNCTION"
 	BUILTIN_OBJ      = "BUILTIN"
 	ARRAY_OBJ        = "ARRAY"
+	HASH_OBJ         = "HASH"
 )
 
 type (
 	Object interface {
 		Type() ObjectType
 		Inspect() string
+	}
+
+	Hashable interface {
+		Object
+		HashKey() HashKey
 	}
 
 	Integer struct {
@@ -48,12 +54,20 @@ func (i *Integer) Type() ObjectType {
 	return INTEGER_OBJ
 }
 
+func (i *Integer) HashKey() HashKey {
+	return HashKey(fmt.Sprintf("%s_%d", i.Type(), i.Value))
+}
+
 func (s *String) Inspect() string {
 	return s.Value
 }
 
 func (s *String) Type() ObjectType {
 	return STRING_OBJ
+}
+
+func (s *String) HashKey() HashKey {
+	return HashKey(fmt.Sprintf("%s_%s", s.Type(), s.Value))
 }
 
 func (b *Boolean) Inspect() string {
@@ -156,6 +170,33 @@ func (a *Array) Inspect() string {
 	out.WriteString("[")
 	out.WriteString(strings.Join(elts, ", "))
 	out.WriteString("]")
+
+	return out.String()
+}
+
+type HashKey string
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
+func (h *Hash) Type() ObjectType { return HASH_OBJ }
+func (h *Hash) Inspect() string {
+	var out bytes.Buffer
+
+	elts := make([]string, 0, len(h.Pairs))
+	for _, v := range h.Pairs {
+		elts = append(elts, fmt.Sprintf("%s: %s", v.Key.Inspect(), v.Value.Inspect()))
+	}
+
+	out.WriteString("{")
+	out.WriteString(strings.Join(elts, ", "))
+	out.WriteString("}")
 
 	return out.String()
 }

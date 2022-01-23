@@ -421,12 +421,58 @@ func TestArrayLiterals(t *testing.T) {
 	testIntegerObject(t, result.Elements[2], 6)
 }
 
+func TestHashLiterals(t *testing.T) {
+	input := "{1:1}"
+
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.Hash)
+	if !ok {
+		t.Fatalf("object is not *object.Hash. got=%T (%+v)", evaluated, evaluated)
+	}
+
+	if len(result.Pairs) != 1 {
+		t.Errorf("hash has wrong number of elements. got=%d", len(result.Pairs))
+	}
+
+	for _, v := range result.Pairs {
+		testIntegerObject(t, v.Key, 1)
+		testIntegerObject(t, v.Value, 1)
+	}
+}
+
 func TestArrayIndexExpressions(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected interface{}
 	}{
 		{"[0,1,2][0]", 0},
+		{"[0,1,2][1]", 1},
+		{"[0,1,2][2]", 2},
+		{`["a","b","c"][0]`, "a"},
+		{`["a","b","c"][1]`, "b"},
+		{`["a","b","c"][2]`, "c"},
+		{`let myArray = [1, "b", fn() { "1312" }]; myArray[0]`, 1},
+		{`let myArray = [1, "b", fn() { "1312" }]; myArray[1]`, "b"},
+		{`let myArray = [1, "b", (fn() { "1312" })]; myArray[2]()`, "1312"},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+
+		if reflect.TypeOf(tt.expected).Kind() == reflect.Int {
+			testIntegerObject(t, evaluated, int64(tt.expected.(int)))
+		} else {
+			testStringObject(t, evaluated, tt.expected.(string))
+		}
+	}
+}
+
+func TestHashIndexExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{"{1: 1}[1]", 1},
 		{"[0,1,2][1]", 1},
 		{"[0,1,2][2]", 2},
 		{`["a","b","c"][0]`, "a"},

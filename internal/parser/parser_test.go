@@ -822,3 +822,32 @@ func TestParsingIndexExpression(t *testing.T) {
 		return
 	}
 }
+
+func TestParsingHashExpression(t *testing.T) {
+	input := `{"a": "a", "b": "b", 1: 2, "say": fn() { "FUCK" }}`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("expected program.Statements length 1. got=%d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("expected statement to be of type *ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+
+	hash, ok := stmt.Expression.(*ast.HashLiteral)
+	if !ok {
+		t.Errorf("expected expression to be of type *ast.HashLiteral. got=%T", stmt.Expression)
+	}
+
+	var keys []ast.Expression
+	for k := range hash.Hash {
+		keys = append(keys, k)
+	}
+
+	// todo circle back to these test.
+}

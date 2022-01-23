@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"fmt"
 	"monkey/internal/token"
 	"strings"
 )
@@ -143,6 +144,11 @@ type (
 		Left  Expression
 		Index Expression
 	}
+
+	HashLiteral struct {
+		Token *token.Token
+		Hash  map[Expression]Expression
+	}
 )
 
 func (l *LetStatement) statementNode()       {}
@@ -264,10 +270,11 @@ func (i *BlockStatement) statementNode()       {}
 func (i *BlockStatement) TokenLiteral() string { return i.Token.Literal }
 func (i *BlockStatement) String() string {
 	var out bytes.Buffer
-
+	out.WriteString("{\n")
 	for _, s := range i.Statements {
-		out.WriteString(s.String())
+		out.WriteString("\t" + s.String() + "\n")
 	}
+	out.WriteString("}\n")
 
 	return out.String()
 }
@@ -315,6 +322,23 @@ func (i *IndexExpression) String() string {
 	out.WriteString("[")
 	out.WriteString(i.Index.String())
 	out.WriteString("])")
+
+	return out.String()
+}
+
+func (i *HashLiteral) expressionNode()      {}
+func (i *HashLiteral) TokenLiteral() string { return i.Token.Literal }
+func (i *HashLiteral) String() string {
+	var out bytes.Buffer
+
+	vals := make([]string, 0, len(i.Hash))
+	for key, value := range i.Hash {
+		vals = append(vals, fmt.Sprintf("%s: %s", key, value))
+	}
+
+	out.WriteString("{")
+	out.WriteString(strings.Join(vals, ", "))
+	out.WriteString("}")
 
 	return out.String()
 }
