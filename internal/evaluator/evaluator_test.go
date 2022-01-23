@@ -4,6 +4,7 @@ import (
 	"monkey/internal/lexer"
 	"monkey/internal/object"
 	"monkey/internal/parser"
+	"reflect"
 	"testing"
 )
 
@@ -398,6 +399,51 @@ func TestBuiltinFunctions(t *testing.T) {
 			if errObj.Message != tt.expected {
 				t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
 			}
+		}
+	}
+}
+
+func TestArrayLiterals(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.Array)
+	if !ok {
+		t.Fatalf("object is not Array. got=%T (%+v)", evaluated, evaluated)
+	}
+
+	if len(result.Elements) != 3 {
+		t.Errorf("array has wrong number of elements. got=%d", len(result.Elements))
+	}
+
+	testIntegerObject(t, result.Elements[0], 1)
+	testIntegerObject(t, result.Elements[1], 4)
+	testIntegerObject(t, result.Elements[2], 6)
+}
+
+func TestArrayIndexExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{"[0,1,2][0]", 0},
+		{"[0,1,2][1]", 1},
+		{"[0,1,2][2]", 2},
+		{`["a","b","c"][0]`, "a"},
+		{`["a","b","c"][1]`, "b"},
+		{`["a","b","c"][2]`, "c"},
+		{`let myArray = [1, "b", fn() { "1312" }]; myArray[0]`, 1},
+		{`let myArray = [1, "b", fn() { "1312" }]; myArray[1]`, "b"},
+		{`let myArray = [1, "b", (fn() { "1312" })]; myArray[2]()`, "1312"},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+
+		if reflect.TypeOf(tt.expected).Kind() == reflect.Int {
+			testIntegerObject(t, evaluated, int64(tt.expected.(int)))
+		} else {
+			testStringObject(t, evaluated, tt.expected.(string))
 		}
 	}
 }

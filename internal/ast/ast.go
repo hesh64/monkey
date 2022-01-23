@@ -137,6 +137,12 @@ type (
 		Consequence *BlockStatement
 		Alternative *BlockStatement
 	}
+
+	IndexExpression struct {
+		Token *token.Token
+		Left  Expression
+		Index Expression
+	}
 )
 
 func (l *LetStatement) statementNode()       {}
@@ -289,10 +295,26 @@ func (i *ArrayLiteral) String() string {
 	var out bytes.Buffer
 	out.WriteString("[")
 
+	elts := make([]string, 0, 0)
 	for _, elt := range i.Elements {
-		out.WriteString(elt.String())
+		elts = append(elts, elt.String())
 	}
 
+	out.WriteString(strings.Join(elts, ", "))
 	out.WriteString("]")
+	return out.String()
+}
+
+func (i *IndexExpression) expressionNode()      {}
+func (i *IndexExpression) TokenLiteral() string { return i.Token.Literal }
+func (i *IndexExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(i.Left.String())
+	out.WriteString("[")
+	out.WriteString(i.Index.String())
+	out.WriteString("])")
+
 	return out.String()
 }

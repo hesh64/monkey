@@ -85,6 +85,25 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 
 		return &object.ReturnValue{Value: val}
+	case *ast.ArrayLiteral:
+		elements := evalExpressions(node.Elements, env)
+		if len(elements) == 1 && isError(elements[0]) {
+			return elements[0]
+		}
+
+		return &object.Array{Elements: elements}
+	case *ast.IndexExpression:
+		left := Eval(node.Left, env)
+		if isError(left) {
+			return left
+		}
+
+		index := Eval(node.Index, env)
+		if isError(index) {
+			return index
+		}
+
+		return evalIndexExpression(left, index)
 	}
 
 	return nil
@@ -342,6 +361,28 @@ func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 	return results
 }
 
+func evalArrayIndexExpression(left, index object.Object) object.Object {
+	array := left.(*object.Array)
+	idx := index.(*object.Integer).Value
+	max := int64(len(array.Elements) - 1)
+
+	if idx > max || idx < 0 {
+		return NULL
+	}
+
+	return array.Elements[idx]
+}
+
+func evalIndexExpression(left, index object.Object) object.Object {
+	switch left.(type) {
+	case *object.Array:
+		// todo we differ from the book on how to evaluate the object indices
+		return evalArrayIndexExpression(left, index)
+	default:
+		return newError("index operator not supported: %s", left.Type())
+	}
+}
+
 func applyFunction(fn object.Object, args []object.Object) object.Object {
 	switch fn := fn.(type) {
 	case *object.Function:
@@ -352,7 +393,6 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	case *object.Builtin:
 		return fn.Fn(args...)
 	default:
-		fmt.Println(fn)
 		return newError("not a function: %s", fn.Type())
 	}
 

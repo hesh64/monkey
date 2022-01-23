@@ -61,6 +61,7 @@ if (5 < 10) {
 "foobar"
 "foo bar"
 [1, 2];
+[1, 2][1];
 `,
 			tests: []TestCase{
 				{token.LET, "let"},
@@ -142,6 +143,15 @@ if (5 < 10) {
 				{token.INT, "1"},
 				{token.COMMA, ","},
 				{token.INT, "2"},
+				{token.RBRACKET, "]"},
+				{token.SEMICOLON, ";"},
+				{token.LBRACKET, "["},
+				{token.INT, "1"},
+				{token.COMMA, ","},
+				{token.INT, "2"},
+				{token.RBRACKET, "]"},
+				{token.LBRACKET, "["},
+				{token.INT, "1"},
 				{token.RBRACKET, "]"},
 				{token.SEMICOLON, ";"},
 				{token.EOF, ""},
