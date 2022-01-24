@@ -1,0 +1,4 @@
+go build cmd/interpreter
+
+./main file_to_run
+

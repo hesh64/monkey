@@ -39,4 +39,19 @@ var builtins = map[string]*object.Builtin{
 			return NULL
 		},
 	},
+	"println": {
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) == 0 {
+				return newError("wrong number of arguments. got=%d", len(args))
+			}
+
+			argsInterface := make([]interface{}, 0, len(args))
+			for _, arg := range args {
+				argsInterface = append(argsInterface, arg.Inspect())
+			}
+			fmt.Println(argsInterface...)
+
+			return NULL
+		},
+	},
 }
